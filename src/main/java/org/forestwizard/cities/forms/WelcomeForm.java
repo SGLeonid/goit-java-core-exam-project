@@ -23,6 +23,7 @@ public class WelcomeForm extends JFrame {
             DialogForm dialogForm = new DialogForm();
             dialogForm.setVisible(true);
             setVisible(false);
+            JOptionPane.showMessageDialog(this, "If you think you have no ideas, just type 'I give up'");
         });
 
         add(label);
