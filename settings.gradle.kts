@@ -1,0 +1,1 @@
+rootProject.name = "goit-java-core-exam-project"
