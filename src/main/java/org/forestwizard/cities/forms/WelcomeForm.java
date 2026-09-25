@@ -30,17 +30,6 @@ public class WelcomeForm extends JFrame {
             DialogForm dialogForm = new DialogForm();
             dialogForm.setVisible(true);
             setVisible(false);
-            try {
-                String text = ResourceLoader.loadTextLines("rules.txt").stream().collect(
-                        StringBuilder::new,
-                        (builder, str) -> builder.append(str).append("\n"),
-                        StringBuilder::append
-                ).toString();
-                JOptionPane.showMessageDialog(this, text);
-            } catch (ResourceLoaderException e) {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-            }
-
         });
 
         add(label);

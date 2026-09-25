@@ -16,7 +16,7 @@ public class DialogForm extends JFrame {
     public DialogForm() {
         super();
         setTitle(WINDOW_TITLE);
-        setSize(550, 160);
+        setSize(500, 160);
         setLocationRelativeTo(null);
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -27,16 +27,26 @@ public class DialogForm extends JFrame {
         }
 
         this.gameService = new GameService();
-        JPanel panel = new JPanel(new GridLayout(2, 2, 20, 20));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints constraints = new GridBagConstraints();
+
         this.cityTextField = new JTextField();
-        this.cityTextField.setPreferredSize(new Dimension(200, 25));
-        this.answerLabel = new JLabel("");
-        this.answerLabel.setPreferredSize(new Dimension(200, 25));
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 0.0f;
+        constraints.insets = new Insets(5, 10, 5, 10);
+        panel.add(cityTextField, constraints);
+
         JLabel textFieldLabel = new JLabel("Твій варіант назви міста");
-        textFieldLabel.setPreferredSize(new Dimension(200, 25));
+        constraints.gridx = 1;
+        constraints.weightx = 1.0f;
+        panel.add(textFieldLabel, constraints);
+
+        this.answerLabel = new JLabel("");
+        this.answerLabel.setMaximumSize(new Dimension(400, 25));
         JButton submitButton = new JButton("Зробити хід");
-        submitButton.setPreferredSize(new Dimension(200, 25));
         submitButton.addActionListener(e -> {
             if (gameService.isEnabled()) {
                 String answer = gameService.doTurn(cityTextField.getText());
@@ -44,10 +54,15 @@ public class DialogForm extends JFrame {
             }
         });
 
-        panel.add(cityTextField);
-        panel.add(textFieldLabel);
-        panel.add(submitButton);
-        panel.add(answerLabel);
+        constraints.weightx = 0.0f;
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        panel.add(submitButton, constraints);
+
+        constraints.gridx = 1;
+        constraints.weightx = 1.0f;
+        panel.add(answerLabel, constraints);
+
         add(panel);
     }
 

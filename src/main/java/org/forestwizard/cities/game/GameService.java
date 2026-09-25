@@ -35,7 +35,8 @@ public class GameService {
             return "Комп'ютер: Будь-ласка, введи назву міста";
         }
 
-        if (text.trim().equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
+        text = text.trim();
+        if (text.equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
             DialogForm.showMessageDialog(String.format(WIN_MESSAGE_FORMAT, playerScore, computerScore));
             isEnabled = false;
             return "Гру закінчено!";
@@ -43,7 +44,7 @@ public class GameService {
 
         Character nameBegin = getUpperCaseLastValidChar(text);
         if (nameBegin == null) {
-            return "Комп'ютер: Будь-ласка, введи назву міста з допустипою останньою літерою";
+            return "Комп'ютер: Введи допустиму назву міста";
         }
 
         if (enteredCities.contains(text)) {
@@ -51,16 +52,19 @@ public class GameService {
         }
 
         if (lastComputerAnswer != null && text.charAt(0) != getUpperCaseLastChar(lastComputerAnswer)) {
-            return "Комп'ютер: Така назва не закінчується на останню літеру моєї відповіді";
+            return "Комп'ютер: Введи назву на останню літеру відповіді";
         }
 
         if (!cityRepository.getAll().contains(text)) {
-            return "Комп'ютер: Я не маю таку назву міста у своїй базі занань";
+            return "Комп'ютер: Я не знаю таку назву міста";
         }
 
         playerScore++;
+        String finalText = text;
         Optional<String> answerOptional = cityRepository.getAll().stream()
-                .filter(str -> str.startsWith(String.valueOf(nameBegin)) && !enteredCities.contains(str) && !str.equals(text))
+                .filter(str -> str.startsWith(String.valueOf(nameBegin))
+                        && !enteredCities.contains(str)
+                        && !str.equals(finalText))
                 .findFirst();
 
         if (answerOptional.isPresent()) {
