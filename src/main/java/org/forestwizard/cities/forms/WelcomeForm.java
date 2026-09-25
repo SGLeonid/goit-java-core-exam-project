@@ -1,29 +1,46 @@
 package org.forestwizard.cities.forms;
 
+import org.forestwizard.cities.utils.ResourceLoader;
+import org.forestwizard.cities.utils.ResourceLoaderException;
+
 import javax.swing.*;
+import java.awt.*;
 
 public class WelcomeForm extends JFrame {
-    private static final String WELCOME_TITLE_TEXT = "Welcome!";
-    private static final String WELCOME_LABEL_TEXT = "Welcome to the Cities game. Let's begin!";
+    private static final String WELCOME_TITLE_TEXT = "Ласкаво просимо!";
+    private static final String WELCOME_LABEL_TEXT = "Ласкаво просимо у гру 'Міста'. Почнімо!";
 
     public WelcomeForm() {
         super();
         setTitle(WELCOME_TITLE_TEXT);
         setSize(400, 100);
         setLocationRelativeTo(null);
-        setLayout(null);
+        setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        try {
+            setIconImage(ResourceLoader.loadImage("icon.png"));
+        } catch (ResourceLoaderException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
+        }
 
         JLabel label = new JLabel(WELCOME_LABEL_TEXT);
-        label.setBounds(20, 20, 240,20);
         JButton button = new JButton("OK");
-        button.setBounds(260, 15, 100, 30);
-        button.addActionListener(e -> {
+        button.addActionListener(event -> {
             DialogForm dialogForm = new DialogForm();
             dialogForm.setVisible(true);
             setVisible(false);
-            JOptionPane.showMessageDialog(this, "If you think you have no ideas, just type 'I give up'");
+            try {
+                String text = ResourceLoader.loadTextLines("rules.txt").stream().collect(
+                        StringBuilder::new,
+                        (builder, str) -> builder.append(str).append("\n"),
+                        StringBuilder::append
+                ).toString();
+                JOptionPane.showMessageDialog(this, text);
+            } catch (ResourceLoaderException e) {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+            }
+
         });
 
         add(label);

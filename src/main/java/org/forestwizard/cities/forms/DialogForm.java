@@ -1,87 +1,57 @@
 package org.forestwizard.cities.forms;
 
+import org.forestwizard.cities.game.GameService;
 import org.forestwizard.cities.utils.ResourceLoader;
 import org.forestwizard.cities.utils.ResourceLoaderException;
 
 import javax.swing.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.awt.*;
 
 public class DialogForm extends JFrame {
-    private static final String WINDOW_TITLE = "Cities";
-    private static final String USER_GIVE_UP_ANSWER = "i give up";
-
+    private static final String WINDOW_TITLE = "Міста";
     private final JTextField cityTextField;
     private final JLabel answerLabel;
-    private final Set<String> enteredCities;
-    private final Set<String> computerKnownCities;
+    private final transient GameService gameService;
 
     public DialogForm() {
         super();
         setTitle(WINDOW_TITLE);
-        setSize(500, 200);
+        setSize(550, 160);
         setLocationRelativeTo(null);
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        this.cityTextField = new JTextField();
-        this.cityTextField.setBounds(20, 20, 200, 25);
-        this.answerLabel = new JLabel("");
-        this.answerLabel.setBounds(230, 60, 250, 30);
-        JLabel textFieldLabel = new JLabel("Enter the name of city here");
-        textFieldLabel.setBounds(230, 20, 200, 25);
-        JButton submitButton = new JButton("Enter");
-        submitButton.setBounds(20, 60, 200, 30);
-        this.enteredCities = new HashSet<>();
-        this.computerKnownCities = new HashSet<>();
-
         try {
-            List<String> list = ResourceLoader.load("cities.txt");
-            this.computerKnownCities.addAll(list);
+            setIconImage(ResourceLoader.loadImage("icon.png"));
         } catch (ResourceLoaderException e) {
-            JOptionPane.showMessageDialog(this, "Resource loader error: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, e.getMessage());
         }
 
+        this.gameService = new GameService();
+        JPanel panel = new JPanel(new GridLayout(2, 2, 20, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        this.cityTextField = new JTextField();
+        this.cityTextField.setPreferredSize(new Dimension(200, 25));
+        this.answerLabel = new JLabel("");
+        this.answerLabel.setPreferredSize(new Dimension(200, 25));
+        JLabel textFieldLabel = new JLabel("Твій варіант назви міста");
+        textFieldLabel.setPreferredSize(new Dimension(200, 25));
+        JButton submitButton = new JButton("Зробити хід");
+        submitButton.setPreferredSize(new Dimension(200, 25));
         submitButton.addActionListener(e -> {
-            String text = cityTextField.getText();
-            if (text == null || text.isEmpty()) {
-                answerLabel.setText("Computer: Please, enter the name of city");
-                return;
-            }
-
-            if (text.trim().equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
-                answerLabel.setText("Game over!");
-                submitButton.setEnabled(false);
-                JOptionPane.showMessageDialog(this, "Game over. Your score: " + enteredCities.size());
-                return;
-            }
-
-            if (enteredCities.contains(text.toLowerCase())) {
-                answerLabel.setText("Computer: You've already entered this name");
-                return;
-            }
-
-            String nameBegin = Character.toString(text.toCharArray()[text.length() - 1]).toUpperCase();
-            Optional<String> answerOptional = computerKnownCities.stream()
-                    .filter(str -> str.startsWith(nameBegin))
-                    .findFirst();
-            answerLabel.setText("Computer: " + answerOptional.orElse("I give up!"));
-            enteredCities.add(text.toLowerCase());
-
-            if (answerOptional.isPresent()) {
-                computerKnownCities.remove(answerOptional.get());
-            } else {
-                submitButton.setEnabled(false);
-                JOptionPane.showMessageDialog(this, "You win. Your score: " + enteredCities.size());
+            if (gameService.isEnabled()) {
+                String answer = gameService.doTurn(cityTextField.getText());
+                answerLabel.setText(answer);
             }
         });
 
-        add(cityTextField);
-        add(textFieldLabel);
-        add(submitButton);
-        add(answerLabel);
-        setLayout(null);
+        panel.add(cityTextField);
+        panel.add(textFieldLabel);
+        panel.add(submitButton);
+        panel.add(answerLabel);
+        add(panel);
+    }
+
+    public static void showMessageDialog(String text) {
+        JOptionPane.showMessageDialog(null, text);
     }
 }
