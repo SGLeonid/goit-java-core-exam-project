@@ -1,6 +1,5 @@
 package org.forestwizard.cities.game;
 
-import org.forestwizard.cities.forms.DialogForm;
 import org.forestwizard.cities.utils.ResourceLoader;
 import org.forestwizard.cities.utils.ResourceLoaderException;
 
@@ -10,14 +9,12 @@ import java.util.Set;
 public class CityRepository {
     private final Set<String> data;
 
-    public CityRepository() {
-        Set<String> set = null;
+    public CityRepository() throws CityRepositoryException {
         try {
-            set = new HashSet<>(ResourceLoader.loadTextLines("cities.txt"));
+            this.data = new HashSet<>(ResourceLoader.loadTextLines("cities.txt"));
         } catch (ResourceLoaderException e) {
-            DialogForm.showMessageDialog("Resource loader error: " + e.getMessage());
+            throw new CityRepositoryException("Resource loader error: " + e.getMessage(), e);
         }
-        this.data = set;
     }
 
     public Set<String> getAll() {

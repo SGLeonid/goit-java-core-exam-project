@@ -1,5 +1,7 @@
 package org.forestwizard.cities.forms;
 
+import org.forestwizard.cities.game.CityRepository;
+import org.forestwizard.cities.game.CityRepositoryException;
 import org.forestwizard.cities.game.GameService;
 import org.forestwizard.cities.utils.ResourceLoader;
 import org.forestwizard.cities.utils.ResourceLoaderException;
@@ -8,12 +10,19 @@ import javax.swing.*;
 import java.awt.*;
 
 public class DialogForm extends JFrame {
+    private static final String GAME_OVER_MESSAGE_FORMAT = "Гру закінчено!\nТвій рекорд: %s \nРекорд комп'ютера: %s";
+    private static final String WIN_MESSAGE_FORMAT = "Ти переміг!\nТвій рекорд: %s\nРекорд комп'ютера: %s";
     private static final String WINDOW_TITLE = "Міста";
+    private static final String SUBMIT_BUTTON_DO_TURN_TEXT = "Зробити хід";
+    private static final String SUBMIT_BUTTON_NEW_GAME_TEXT = "Нова гра";
     private final JTextField cityTextField;
     private final JLabel answerLabel;
     private final transient GameService gameService;
+    private SubmitButtonState buttonState = SubmitButtonState.STATE_DO_TURN;
 
-    public DialogForm() {
+    public DialogForm() throws CityRepositoryException {
+        CityRepository repository;
+
         super();
         setTitle(WINDOW_TITLE);
         setSize(500, 160);
@@ -26,7 +35,9 @@ public class DialogForm extends JFrame {
             JOptionPane.showMessageDialog(this, e.getMessage());
         }
 
-        this.gameService = new GameService();
+        repository = new CityRepository();
+        this.gameService = new GameService(repository);
+
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints constraints = new GridBagConstraints();
@@ -46,11 +57,41 @@ public class DialogForm extends JFrame {
 
         this.answerLabel = new JLabel("");
         this.answerLabel.setMaximumSize(new Dimension(400, 25));
-        JButton submitButton = new JButton("Зробити хід");
+        JButton submitButton = new JButton(SUBMIT_BUTTON_DO_TURN_TEXT);
+        submitButton.setPreferredSize(new Dimension(100, 25));
         submitButton.addActionListener(e -> {
-            if (gameService.isEnabled()) {
-                String answer = gameService.doTurn(cityTextField.getText());
-                answerLabel.setText(answer);
+            if (buttonState == SubmitButtonState.STATE_DO_TURN) {
+                MoveResult result = gameService.doTurn(cityTextField.getText());
+                answerLabel.setText(result.getMessage());
+                if (result.getType() == MoveResultType.WIN) {
+                    JOptionPane.showMessageDialog(this, String.format(
+                            WIN_MESSAGE_FORMAT,
+                            result.getPlayerScore(),
+                            result.getComputerScore()
+                    ));
+                    submitButton.setText(SUBMIT_BUTTON_NEW_GAME_TEXT);
+                    buttonState = SubmitButtonState.STATE_NEW_GAME;
+                    return;
+                }
+
+                if (result.getType() == MoveResultType.GAME_OVER) {
+                    JOptionPane.showMessageDialog(this, String.format(
+                            GAME_OVER_MESSAGE_FORMAT,
+                            result.getPlayerScore(),
+                            result.getComputerScore()
+                    ));
+                    submitButton.setText(SUBMIT_BUTTON_NEW_GAME_TEXT);
+                    buttonState = SubmitButtonState.STATE_NEW_GAME;
+                    return;
+                }
+            }
+
+            if (buttonState == SubmitButtonState.STATE_NEW_GAME) {
+                buttonState = SubmitButtonState.STATE_DO_TURN;
+                cityTextField.setText("");
+                answerLabel.setText("");
+                submitButton.setText(SUBMIT_BUTTON_DO_TURN_TEXT);
+                gameService.reset();
             }
         });
 
@@ -64,9 +105,5 @@ public class DialogForm extends JFrame {
         panel.add(answerLabel, constraints);
 
         add(panel);
-    }
-
-    public static void showMessageDialog(String text) {
-        JOptionPane.showMessageDialog(null, text);
     }
 }

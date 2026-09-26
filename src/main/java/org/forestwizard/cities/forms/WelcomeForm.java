@@ -1,5 +1,6 @@
 package org.forestwizard.cities.forms;
 
+import org.forestwizard.cities.game.CityRepositoryException;
 import org.forestwizard.cities.utils.ResourceLoader;
 import org.forestwizard.cities.utils.ResourceLoaderException;
 
@@ -27,9 +28,14 @@ public class WelcomeForm extends JFrame {
         JLabel label = new JLabel(WELCOME_LABEL_TEXT);
         JButton button = new JButton("OK");
         button.addActionListener(event -> {
-            DialogForm dialogForm = new DialogForm();
-            dialogForm.setVisible(true);
-            setVisible(false);
+            try {
+                DialogForm dialogForm = new DialogForm();
+                dialogForm.setVisible(true);
+                setVisible(false);
+            } catch (CityRepositoryException e) {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                System.exit(0);
+            }
         });
 
         add(label);

@@ -1,90 +1,92 @@
 package org.forestwizard.cities.game;
 
-import org.forestwizard.cities.forms.DialogForm;
+import org.forestwizard.cities.forms.MoveResult;
+import org.forestwizard.cities.forms.MoveResultType;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 public class GameService {
-    private static final String WIN_MESSAGE_FORMAT = "Гру закінчено!\nТвій рекорд: %s \nРекорд комп'ютера: %s";
-    private static final String GAME_OVER_MESSAGE_FORMAT = "Ти переміг!\nТвій рекорд: %s\nРекорд комп'ютера: %s";
     private static final String USER_GIVE_UP_ANSWER = "здаюсь";
-    private static final Set<Character> invalidNameEndings = Set.of('Ь', 'Й');
+    private static final Set<Character> invalidNameEndings = Set.of('ь', 'й');
     private final CityRepository cityRepository;
-    private final Set<String> enteredCities;
-    private boolean isEnabled;
+    private Set<String> enteredCities;
     private String lastComputerAnswer;
     private int playerScore;
     private int computerScore;
 
-    public GameService() {
-        this.cityRepository = new CityRepository();
-        this.enteredCities = new HashSet<>();
-        this.isEnabled = true;
-        this.lastComputerAnswer = null;
-        this.playerScore = 0;
-        this.computerScore = 0;
+    public GameService(CityRepository repository) {
+        this.cityRepository = repository;
+        reset();
     }
 
-    public boolean isEnabled() {
-        return isEnabled;
+    public void reset() {
+        enteredCities = new HashSet<>();
+        lastComputerAnswer = null;
+        playerScore = 0;
+        computerScore = 0;
     }
 
-    public String doTurn(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            return "Комп'ютер: Будь-ласка, введи назву міста";
+    public MoveResult doTurn(String text) {
+        if (text == null || normalizeCityName(text).isEmpty()) {
+            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Будь-ласка, введи назву міста");
         }
 
-        text = text.trim();
-        if (text.equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
-            DialogForm.showMessageDialog(String.format(WIN_MESSAGE_FORMAT, playerScore, computerScore));
-            isEnabled = false;
-            return "Гру закінчено!";
+        String finalText = normalizeCityName(text);
+        if (finalText.equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
+            return new MoveResult(MoveResultType.GAME_OVER, "Гру закінчено!", playerScore, computerScore);
         }
 
-        Character nameBegin = getUpperCaseLastValidChar(text);
+        Character nameBegin = getLastValidChar(finalText);
         if (nameBegin == null) {
-            return "Комп'ютер: Введи допустиму назву міста";
+            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Введи допустиму назву міста");
         }
 
-        if (enteredCities.contains(text)) {
-            return "Комп'ютер: Це ім'я вже використане";
+        if (enteredCities.stream().anyMatch(item -> item.equalsIgnoreCase(finalText))) {
+            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Це ім'я вже використане");
         }
 
-        if (lastComputerAnswer != null && text.charAt(0) != getUpperCaseLastChar(lastComputerAnswer)) {
-            return "Комп'ютер: Введи назву на останню літеру відповіді";
+        if (lastComputerAnswer != null) {
+            Character answerNameBegin = getLastValidChar(lastComputerAnswer);
+            if (answerNameBegin != null && finalText.charAt(0) != answerNameBegin) {
+                return new MoveResult(
+                        MoveResultType.CONTINUE,
+                        "Комп'ютер: Введи назву на останню літеру відповіді");
+            }
         }
 
-        if (!cityRepository.getAll().contains(text)) {
-            return "Комп'ютер: Я не знаю таку назву міста";
+        if (cityRepository.getAll().stream()
+                .map(this::normalizeCityName)
+                .noneMatch(item -> item.equalsIgnoreCase(finalText))
+        ) {
+            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Я не знаю таку назву міста");
         }
 
         playerScore++;
-        String finalText = text;
         Optional<String> answerOptional = cityRepository.getAll().stream()
+                .map(this::normalizeCityName)
                 .filter(str -> str.startsWith(String.valueOf(nameBegin))
                         && !enteredCities.contains(str)
-                        && !str.equals(finalText))
-                .findFirst();
+                        && !str.equals(finalText)
+                ).findFirst();
 
         if (answerOptional.isPresent()) {
             String answer = answerOptional.get();
-            enteredCities.add(text);
+            enteredCities.add(finalText);
             enteredCities.add(answer);
             lastComputerAnswer = answer;
             computerScore++;
-            return "Комп'ютер: " + answer;
+            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: " + answer);
         } else {
-            DialogForm.showMessageDialog(String.format(GAME_OVER_MESSAGE_FORMAT, playerScore, computerScore));
-            isEnabled = false;
-            return "Комп'ютер: Здаюсь!";
+            return new MoveResult(MoveResultType.WIN, "Комп'ютер: Здаюсь!", playerScore, computerScore);
         }
     }
 
-    private Character getUpperCaseLastValidChar(String text) {
+    private Character getLastValidChar(String text) {
         int index = text.length() - 1;
-        while (index != 0) {
-            char c = Character.toUpperCase(text.charAt(index));
+        while (index >= 0) {
+            char c = Character.toLowerCase(text.charAt(index));
             if (Character.isAlphabetic(c) && !invalidNameEndings.contains(c)) {
                 return c;
             }
@@ -93,7 +95,7 @@ public class GameService {
         return null;
     }
 
-    private char getUpperCaseLastChar(String text) {
-        return Character.toUpperCase(text.charAt(text.length() - 1));
+    private String normalizeCityName(String text) {
+        return text.trim().toLowerCase().replaceAll("[^a-zа-яєії]", "");
     }
 }
