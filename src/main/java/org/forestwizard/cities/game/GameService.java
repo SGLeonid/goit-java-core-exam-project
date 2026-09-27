@@ -39,7 +39,7 @@ public class GameService {
 
     public MoveResult doTurn(String text) {
         if (status != GameStatus.IN_PROGRESS) {
-            return null;
+            throw new IllegalStateException("Status completed");
         }
 
         if (text == null) {
