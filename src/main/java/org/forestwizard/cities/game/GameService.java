@@ -1,16 +1,24 @@
 package org.forestwizard.cities.game;
 
-import org.forestwizard.cities.forms.MoveResult;
-import org.forestwizard.cities.forms.MoveResultType;
+import org.forestwizard.cities.utils.CityNameNormalizer;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 public class GameService {
-    private static final String USER_GIVE_UP_ANSWER = "здаюсь";
+    private static final String NAME_EMPTY_OR_NULL_TEXT = "Комп'ютер: Будь-ласка, введи назву міста";
+    private static final String NAME_INVALID_TEXT = "Комп'ютер: Введи допустиму назву міста";
+    private static final String NAME_UNKNOWN_TEXT = "Комп'ютер: Я не знаю таку назву міста";
+    private static final String NAME_ALREADY_USED_TEXT = "Комп'ютер: Це ім'я вже використане";
+    private static final String COMPUTER_GIVE_UP_TEXT = "Комп'ютер: Здаюсь!";
+    private static final String NAME_NOT_MATCHES_LAST_LETTER = "Комп'ютер: Введи місто на літеру: ";
+    private static final String COMPUTER_ANSWER_TEXT = "Комп'ютер: ";
+    private static final String GAME_OVER_TEXT = "Гру закінчено!";
+    private static final String USER_GIVE_UP_ANSWER_TEXT = "здаюсь";
     private static final Set<Character> invalidNameEndings = Set.of('ь', 'й');
     private final CityRepository cityRepository;
+    private GameStatus status;
     private Set<String> enteredCities;
     private String lastComputerAnswer;
     private int playerScore;
@@ -22,6 +30,7 @@ public class GameService {
     }
 
     public void reset() {
+        status = GameStatus.IN_PROGRESS;
         enteredCities = new HashSet<>();
         lastComputerAnswer = null;
         playerScore = 0;
@@ -29,43 +38,47 @@ public class GameService {
     }
 
     public MoveResult doTurn(String text) {
-        if (text == null || normalizeCityName(text).isEmpty()) {
-            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Будь-ласка, введи назву міста");
+        if (status != GameStatus.IN_PROGRESS) {
+            return null;
         }
 
-        String finalText = normalizeCityName(text);
-        if (finalText.equalsIgnoreCase(USER_GIVE_UP_ANSWER)) {
-            return new MoveResult(MoveResultType.GAME_OVER, "Гру закінчено!", playerScore, computerScore);
+        if (text == null) {
+            return new MoveResult(status, NAME_EMPTY_OR_NULL_TEXT);
+        }
+
+        String finalText = CityNameNormalizer.normalizeName(text);
+        if (finalText.isEmpty()) {
+            return new MoveResult(status, NAME_EMPTY_OR_NULL_TEXT);
+        }
+
+        if (finalText.equalsIgnoreCase(USER_GIVE_UP_ANSWER_TEXT)) {
+            status = GameStatus.COMPUTER_WON;
+            return new MoveResult(status, GAME_OVER_TEXT, playerScore, computerScore);
         }
 
         Character nameBegin = getLastValidChar(finalText);
         if (nameBegin == null) {
-            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Введи допустиму назву міста");
+            return new MoveResult(status, NAME_INVALID_TEXT);
         }
 
         if (enteredCities.stream().anyMatch(item -> item.equalsIgnoreCase(finalText))) {
-            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Це ім'я вже використане");
+            return new MoveResult(status, NAME_ALREADY_USED_TEXT);
         }
 
         if (lastComputerAnswer != null) {
             Character answerNameBegin = getLastValidChar(lastComputerAnswer);
             if (answerNameBegin != null && finalText.charAt(0) != answerNameBegin) {
-                return new MoveResult(
-                        MoveResultType.CONTINUE,
-                        "Комп'ютер: Введи назву на останню літеру відповіді");
+                return new MoveResult(status, NAME_NOT_MATCHES_LAST_LETTER + Character.toUpperCase(answerNameBegin));
             }
         }
 
-        if (cityRepository.getAll().stream()
-                .map(this::normalizeCityName)
-                .noneMatch(item -> item.equalsIgnoreCase(finalText))
-        ) {
-            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: Я не знаю таку назву міста");
+        if (cityRepository.getAll().stream().noneMatch(item -> item.equalsIgnoreCase(finalText))) {
+            return new MoveResult(status, NAME_UNKNOWN_TEXT);
         }
 
         playerScore++;
+        enteredCities.add(finalText);
         Optional<String> answerOptional = cityRepository.getAll().stream()
-                .map(this::normalizeCityName)
                 .filter(str -> str.startsWith(String.valueOf(nameBegin))
                         && !enteredCities.contains(str)
                         && !str.equals(finalText)
@@ -73,13 +86,13 @@ public class GameService {
 
         if (answerOptional.isPresent()) {
             String answer = answerOptional.get();
-            enteredCities.add(finalText);
             enteredCities.add(answer);
             lastComputerAnswer = answer;
             computerScore++;
-            return new MoveResult(MoveResultType.CONTINUE, "Комп'ютер: " + answer);
+            return new MoveResult(status, COMPUTER_ANSWER_TEXT + answer);
         } else {
-            return new MoveResult(MoveResultType.WIN, "Комп'ютер: Здаюсь!", playerScore, computerScore);
+            status = GameStatus.PLAYER_WON;
+            return new MoveResult(status, COMPUTER_GIVE_UP_TEXT, playerScore, computerScore);
         }
     }
 
@@ -93,9 +106,5 @@ public class GameService {
             index--;
         }
         return null;
-    }
-
-    private String normalizeCityName(String text) {
-        return text.trim().toLowerCase().replaceAll("[^a-zа-яєії]", "");
     }
 }

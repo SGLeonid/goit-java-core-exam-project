@@ -1,9 +1,12 @@
 package org.forestwizard.cities.utils;
 
+import org.forestwizard.cities.exception.ResourceLoaderException;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ResourceLoader {
@@ -18,7 +21,7 @@ public class ResourceLoader {
     }
 
     public static List<String> loadTextLines(String path) throws ResourceLoaderException {
-        return new String(loadBytes(path)).lines().toList();
+        return new String(loadBytes(path), StandardCharsets.UTF_8).lines().toList();
     }
 
     public static BufferedImage loadImage(String path) throws ResourceLoaderException {

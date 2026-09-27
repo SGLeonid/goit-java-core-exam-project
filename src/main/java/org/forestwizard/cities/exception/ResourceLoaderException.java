@@ -1,4 +1,4 @@
-package org.forestwizard.cities.utils;
+package org.forestwizard.cities.exception;
 
 public class ResourceLoaderException extends Exception {
     public ResourceLoaderException(String msg) {

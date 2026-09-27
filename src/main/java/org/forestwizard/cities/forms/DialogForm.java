@@ -1,10 +1,8 @@
 package org.forestwizard.cities.forms;
 
-import org.forestwizard.cities.game.CityRepository;
-import org.forestwizard.cities.game.CityRepositoryException;
-import org.forestwizard.cities.game.GameService;
+import org.forestwizard.cities.game.*;
 import org.forestwizard.cities.utils.ResourceLoader;
-import org.forestwizard.cities.utils.ResourceLoaderException;
+import org.forestwizard.cities.exception.ResourceLoaderException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,12 +15,11 @@ public class DialogForm extends JFrame {
     private static final String SUBMIT_BUTTON_NEW_GAME_TEXT = "Нова гра";
     private final JTextField cityTextField;
     private final JLabel answerLabel;
+    private final JButton submitButton;
     private final transient GameService gameService;
-    private SubmitButtonState buttonState = SubmitButtonState.STATE_DO_TURN;
+    private SubmitButtonState buttonState;
 
-    public DialogForm() throws CityRepositoryException {
-        CityRepository repository;
-
+    public DialogForm(GameService service) {
         super();
         setTitle(WINDOW_TITLE);
         setSize(500, 160);
@@ -35,8 +32,8 @@ public class DialogForm extends JFrame {
             JOptionPane.showMessageDialog(this, e.getMessage());
         }
 
-        repository = new CityRepository();
-        this.gameService = new GameService(repository);
+        this.gameService = service;
+        this.buttonState = SubmitButtonState.STATE_DO_TURN;
 
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -57,13 +54,13 @@ public class DialogForm extends JFrame {
 
         this.answerLabel = new JLabel("");
         this.answerLabel.setMaximumSize(new Dimension(400, 25));
-        JButton submitButton = new JButton(SUBMIT_BUTTON_DO_TURN_TEXT);
+        submitButton = new JButton(SUBMIT_BUTTON_DO_TURN_TEXT);
         submitButton.setPreferredSize(new Dimension(100, 25));
-        submitButton.addActionListener(e -> {
+        submitButton.addActionListener(_ -> {
             if (buttonState == SubmitButtonState.STATE_DO_TURN) {
                 MoveResult result = gameService.doTurn(cityTextField.getText());
                 answerLabel.setText(result.getMessage());
-                if (result.getType() == MoveResultType.WIN) {
+                if (result.getStatus() == GameStatus.PLAYER_WON) {
                     JOptionPane.showMessageDialog(this, String.format(
                             WIN_MESSAGE_FORMAT,
                             result.getPlayerScore(),
@@ -74,7 +71,7 @@ public class DialogForm extends JFrame {
                     return;
                 }
 
-                if (result.getType() == MoveResultType.GAME_OVER) {
+                if (result.getStatus() == GameStatus.COMPUTER_WON) {
                     JOptionPane.showMessageDialog(this, String.format(
                             GAME_OVER_MESSAGE_FORMAT,
                             result.getPlayerScore(),

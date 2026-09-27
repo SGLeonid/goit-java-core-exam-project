@@ -1,17 +1,19 @@
 package org.forestwizard.cities.forms;
 
-import org.forestwizard.cities.game.CityRepositoryException;
+import org.forestwizard.cities.exception.CityRepositoryException;
 import org.forestwizard.cities.utils.ResourceLoader;
-import org.forestwizard.cities.utils.ResourceLoaderException;
+import org.forestwizard.cities.exception.ResourceLoaderException;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 public class WelcomeForm extends JFrame {
     private static final String WELCOME_TITLE_TEXT = "Ласкаво просимо!";
     private static final String WELCOME_LABEL_TEXT = "Ласкаво просимо у гру 'Міста'. Почнімо!";
+    private final JButton button;
 
-    public WelcomeForm() {
+    public WelcomeForm() throws CityRepositoryException {
         super();
         setTitle(WELCOME_TITLE_TEXT);
         setSize(400, 100);
@@ -26,19 +28,13 @@ public class WelcomeForm extends JFrame {
         }
 
         JLabel label = new JLabel(WELCOME_LABEL_TEXT);
-        JButton button = new JButton("OK");
-        button.addActionListener(event -> {
-            try {
-                DialogForm dialogForm = new DialogForm();
-                dialogForm.setVisible(true);
-                setVisible(false);
-            } catch (CityRepositoryException e) {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                System.exit(0);
-            }
-        });
+        button = new JButton("OK");
 
         add(label);
         add(button);
+    }
+
+    public void addActionListener(ActionListener listener) {
+        button.addActionListener(listener);
     }
 }
